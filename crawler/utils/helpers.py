@@ -1,4 +1,5 @@
 import math
+from urllib.parse import urljoin, urlsplit
 
 
 def url_parser(href: str, base: str):
@@ -11,26 +12,23 @@ def url_parser(href: str, base: str):
     Absolute HTTP/HTTPS URLs are returned unchanged.
     Unsupported or unrecognized href values return None.
     """
-
     if len(href) == 0:
         return None
-    elif href[0] == "/":
-        return base + href
-    elif href[0:3] == "http":
-        return href
+    
+    if href[0] == "/":
+        return urljoin(base, href)
+
+    url_components = urlsplit(href)
+
+    if url_components.scheme in ["http", "https"]:
+        url_components = url_components._replace(fragment="")
+        if "login" in url_components.path or "signup" in url_components.path or "register" in url_components.path:
+            url_components = url_components._replace(query="")
+        return url_components.geturl()
     else:
         return None
 
 
-def valid_url(url: str, domain: str):
-    """
-    (str, str) => bool
-
-    Checks if a url is valid within the domain of crawler
-
-    """
-    url_sections = url.split("/")
-    return url_sections[2] == domain
 
 
 def tokenize(query: str):
@@ -96,12 +94,7 @@ def rank(
         token_detail = {"document_id": key, "score": value}
         rank_details.append(token_detail)
 
-    for i in range(len(rank_details)):
-        for j in range(len(rank_details) - i - 1):
-            if rank_details[j]["score"] < rank_details[j + 1]["score"]:
-                buff = rank_details[j]
-                rank_details[j] = rank_details[j + 1]
-                rank_details[j + 1] = buff
+    rank_details.sort(key=lambda x: x["score"], reverse=True)
 
     return rank_details
 

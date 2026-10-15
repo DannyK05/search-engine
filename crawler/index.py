@@ -5,28 +5,36 @@ from urllib.parse import urlparse
 import psycopg
 import requests as r
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-
 from crawler_types import Document
-from utils.index import extract_ranked_documents, rank, tokenize, url_parser, valid_url
+from dotenv import load_dotenv
+from utils.database_helpers import create_db_tables
+from utils.helpers import (
+    extract_ranked_documents,
+    rank,
+    tokenize,
+    url_parser,
+)
 
 load_dotenv()
 
 
 def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
-    hrefs: set[str] = set()
+    
+    hrefs: set[str] = set() # initialize hrefs set to store the hrefs found in the crawled page
     domain = urlparse(url).netloc
     base = f"{urlparse(url).scheme}://{domain}"
+
+    # requests and error handling
     try:
         response = r.get(url, timeout=10)
     except r.RequestException:
         return
-    
+
     html_body = response.text
 
     if not response.ok:
         return
-
+    # checks if response content is html
     if "html" not in response.headers.get("Content-Type", ""):
         return
 
@@ -37,12 +45,13 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
 
     if soup.title and soup.title.string:
         title = soup.title.string
+  
 
-    if soup.select('meta[name="description"]')[0]["content"]:
-        description = soup.select('meta[name="description"]')[0]["content"]
+    description_tag = soup.select_one('meta[name="description"]')
 
-    # TODO: Add a handler for site without title tag and meta tags
-
+    if description_tag:
+        description = description_tag.get("content", "")
+ 
     document: Document = {"title": title, "preview": str(description), "url": url}
 
     cur.execute(
@@ -117,7 +126,6 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
         if (
             parsed_url
             and (parsed_url not in known_urls)
-            and valid_url(parsed_url, domain)
         ):
             frontier.appendleft(parsed_url)
             cur.execute(
@@ -132,62 +140,34 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
 
 
 def search_engine(query):
+    # start db connection
     conn = psycopg.connect(
         dbname=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
     )
-
     cur = conn.cursor()
-    cur.execute(
-        """
-            CREATE TABLE IF NOT EXISTS documents(
-                document_id SERIAL PRIMARY KEY,
-                title TEXT,
-                preview TEXT,
-                url TEXT UNIQUE
-            );
 
-            CREATE TABLE IF NOT EXISTS tokens(
-                token_id SERIAL PRIMARY KEY,
-                token TEXT UNIQUE
-            );
+    # create db tables
+    create_db_tables(cur)
 
-            CREATE TABLE IF NOT EXISTS document_tokens(
-                token_id INT REFERENCES tokens(token_id),
-                document_id INT REFERENCES documents(document_id),
-                document_size INT,
-                token_count INT,
-                PRIMARY KEY (token_id, document_id)
-            );
-            
-            CREATE TABLE IF NOT EXISTS known_urls(
-                url_id SERIAL PRIMARY KEY,
-                url TEXT UNIQUE
-            );
-
-            CREATE TABLE IF NOT EXISTS frontier_urls(
-                url_id SERIAL PRIMARY KEY,
-                url TEXT UNIQUE
-            );
-        """
-    )
-
+    # fetch known urls from the db
     cur.execute(
         """
         SELECT url
         FROM known_urls
         """
     )
-
     known_urls: set[str] = {url[0] for url in cur.fetchall()}
 
+    # intial seed urls
     seed_url = [
         ("https://en.wikipedia.org/wiki/Main_Page",),
         ("https://github.com/explore",),
         ("https://developer.mozilla.org/en-US/",),
         ("https://docs.python.org/3/",),
     ]
+    seed_url = [url for url in seed_url if url[0] not in known_urls]
 
     cur.executemany(
         """
@@ -195,21 +175,26 @@ def search_engine(query):
         VALUES (%s)
         ON CONFLICT (url) DO NOTHING
         """,
-        [url if url not in known_urls else () for url in seed_url],
+        seed_url,
     )
 
+    # fetch frontier from the db
     cur.execute(
         """
             SELECT url
             FROM frontier_urls
             """
     )
-
     frontier: deque[str] = deque(url[0] for url in cur.fetchall())
 
     remaining_pages = 100
 
+    # check db for token results
     tokens: list[str] = tokenize(query)
+
+    if not tokens:
+        return [] # guard against empty query
+    
     rank_details = rank(cur, tokens)
     if len(rank_details) >= 10:
         results = extract_ranked_documents(cur, rank_details)
@@ -219,10 +204,16 @@ def search_engine(query):
 
         return results
 
+    # if the results aren't suffiecient i.e < 10, crawl
     # Crawling loop
     while len(frontier) > 0 and remaining_pages > 0:
         print(remaining_pages)
+        # crawl the popped url from the frontier
         next_href = frontier.pop()
+        print(f"Crawling: {next_href}")
+        crawl(cur, next_href, frontier, known_urls)
+
+        # delete the crawled url from the frontier db and add to known urls
         cur.execute(
             """
                 DELETE FROM frontier_urls
@@ -230,25 +221,26 @@ def search_engine(query):
             """,
             (next_href,),
         )
-        print(f"Crawling: {next_href}")
-        crawl(cur, next_href, frontier, known_urls)
         cur.execute(
             """
                 INSERT INTO known_urls (url)
                 VALUES (%s)
                 ON CONFLICT (url) DO NOTHING
-                """,
+            """,
             (next_href,),
         )
         conn.commit()
-        remaining_pages -= 1
 
+        remaining_pages -= 1
+        # check if we have enough results
         rank_details = rank(cur, tokens)
         if len(rank_details) >= 10:
             break
 
+    # extract the url details from the ranked results
     results = extract_ranked_documents(cur, rank_details)
 
+    # repopulate the db with the new frontier urls
     for url in frontier:
         cur.execute(
             """
@@ -258,7 +250,7 @@ def search_engine(query):
             """,
             (url,),
         )
-
+        
     conn.commit()
     cur.close()
     conn.close()
@@ -266,6 +258,7 @@ def search_engine(query):
     return results
 
 
-result = search_engine("Villo")
+## Trying out the search engine pipeline
 
+result = search_engine("cook beans")
 print(result)
