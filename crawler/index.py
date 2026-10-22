@@ -9,8 +9,6 @@ from crawler_types import Document
 from dotenv import load_dotenv
 from utils.database_helpers import create_db_tables
 from utils.helpers import (
-    extract_ranked_documents,
-    rank,
     tokenize,
     url_parser,
 )
@@ -195,70 +193,70 @@ def search_engine(query):
     if not tokens:
         return [] # guard against empty query
     
-    rank_details = rank(cur, tokens)
-    if len(rank_details) >= 10:
-        results = extract_ranked_documents(cur, rank_details)
-        conn.commit()
-        cur.close()
-        conn.close()
+#     rank_details = rank(cur, tokens)
+#     if len(rank_details) >= 10:
+#         results = extract_ranked_documents(cur, rank_details)
+#         conn.commit()
+#         cur.close()
+#         conn.close()
 
-        return results
+#         return results
 
-    # if the results aren't suffiecient i.e < 10, crawl
-    # Crawling loop
-    while len(frontier) > 0 and remaining_pages > 0:
-        print(remaining_pages)
-        # crawl the popped url from the frontier
-        next_href = frontier.pop()
-        print(f"Crawling: {next_href}")
-        crawl(cur, next_href, frontier, known_urls)
+#     # if the results aren't suffiecient i.e < 10, crawl
+#     # Crawling loop
+#     while len(frontier) > 0 and remaining_pages > 0:
+#         print(remaining_pages)
+#         # crawl the popped url from the frontier
+#         next_href = frontier.pop()
+#         print(f"Crawling: {next_href}")
+#         crawl(cur, next_href, frontier, known_urls)
 
-        # delete the crawled url from the frontier db and add to known urls
-        cur.execute(
-            """
-                DELETE FROM frontier_urls
-                WHERE url = %s;
-            """,
-            (next_href,),
-        )
-        cur.execute(
-            """
-                INSERT INTO known_urls (url)
-                VALUES (%s)
-                ON CONFLICT (url) DO NOTHING
-            """,
-            (next_href,),
-        )
-        conn.commit()
+#         # delete the crawled url from the frontier db and add to known urls
+#         cur.execute(
+#             """
+#                 DELETE FROM frontier_urls
+#                 WHERE url = %s;
+#             """,
+#             (next_href,),
+#         )
+#         cur.execute(
+#             """
+#                 INSERT INTO known_urls (url)
+#                 VALUES (%s)
+#                 ON CONFLICT (url) DO NOTHING
+#             """,
+#             (next_href,),
+#         )
+#         conn.commit()
 
-        remaining_pages -= 1
-        # check if we have enough results
-        rank_details = rank(cur, tokens)
-        if len(rank_details) >= 10:
-            break
+#         remaining_pages -= 1
+#         # check if we have enough results
+#         rank_details = rank(cur, tokens)
+#         if len(rank_details) >= 10:
+#             break
 
-    # extract the url details from the ranked results
-    results = extract_ranked_documents(cur, rank_details)
+#     # extract the url details from the ranked results
+#     results = extract_ranked_documents(cur, rank_details)
 
-    # repopulate the db with the new frontier urls
-    for url in frontier:
-        cur.execute(
-            """
-            INSERT INTO frontier_urls (url)
-            VALUES (%s)
-            ON CONFLICT (url) DO NOTHING
-            """,
-            (url,),
-        )
+#     # repopulate the db with the new frontier urls
+#     for url in frontier:
+#         cur.execute(
+#             """
+#             INSERT INTO frontier_urls (url)
+#             VALUES (%s)
+#             ON CONFLICT (url) DO NOTHING
+#             """,
+#             (url,),
+#         )
         
-    conn.commit()
-    cur.close()
-    conn.close()
+#     conn.commit()
+#     cur.close()
+#     conn.close()
 
-    return results
+#     return results
 
 
-## Trying out the search engine pipeline
+# ## Trying out the search engine pipeline
 
-result = search_engine("cook beans")
-print(result)
+# result = search_engine("cook beans")
+# print(result)
