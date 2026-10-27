@@ -10,6 +10,12 @@
 	"compatibility_flags": [
 		"python_workers"
 	],
+	"hyperdrive": [
+		{
+		"binding": "HYPERDRIVE",
+		"id": "bb1d43ed6fd4483ebe9d9bf6fc20f9c6"
+		}
+ 	],
 	"observability": {
 		"enabled": true
 	}

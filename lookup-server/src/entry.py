@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from search import query_db
 from workers import WorkerEntrypoint, asgi
@@ -20,11 +20,13 @@ async def root():
     return {"message": "Hello from FastAPI on Cloudflare Workers!"}
 
 @app.get("/query")
-async def query(q: str):
-    results = query_db(q)
+async def query(q: str, request: Request):
+    hyperdrive = request.app.state.hyperdrive
+    results = query_db(q, hyperdrive)
     return {"results": results}
 
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
+        app.state.hyperdrive = self.env.HYPERDRIVE
         return await asgi.fetch(app, request, self.env)
