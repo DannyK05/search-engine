@@ -13,7 +13,8 @@
 	"hyperdrive": [
 		{
 		"binding": "HYPERDRIVE",
-		"id": "bb1d43ed6fd4483ebe9d9bf6fc20f9c6"
+		"id": "bb1d43ed6fd4483ebe9d9bf6fc20f9c6",
+		"localConnectionString": "postgresql://postgres:admin123@localhost:5432/search_engine"
 		}
  	],
 	"observability": {

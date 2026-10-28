@@ -72,8 +72,8 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89
 
 [[packages]]
 name = "scramp"
-version = "1.4.17"
-wheels = [{ url = "https://files.pythonhosted.org/packages/7f/99/0e372781210cd36b2f2727e5be3ea93066edad7edd6fa2dfdec3b3e28845/scramp-1.4.17-py3-none-any.whl", upload-time = 2026-08-07T17:19:39Z, size = 16131, hashes = { sha256 = "a4e3fd2e8169461a28a13777a166d3da94274454f0714a7d3023fee124474ac8" } }]
+version = "1.4.6"
+wheels = [{ url = "https://files.pythonhosted.org/packages/69/bf/54b5d40bea1c1805175ead2d496c267f05eec87561687dd73ab76869d8d9/scramp-1.4.6-py3-none-any.whl", upload-time = 2025-07-05T14:44:02Z, size = 12812, hashes = { sha256 = "a0cf9d2b4624b69bac5432dd69fecfc55a542384fe73c3a23ed9b138cda484e1" } }]
 
 [[packages]]
 name = "six"

@@ -26,26 +26,35 @@ def rank(
     doc_ranking = {}
     rank_details = []
 
-    total_docs = con.run(
-        """
-            SELECT COUNT(*)
-            FROM documents
+    try:
+        total_docs = con.run(
             """
-    )[0][0]
+                SELECT COUNT(*)
+                FROM documents
+                """
+        )[0][0]
+    except Exception as e:
+        print(f"Error occurred while querying the database: {e}")
+        return rank_details
 
+    
     for token in tokens:
-        rows = con.run(
-            """
-            SELECT *
-            FROM document_tokens
-            WHERE token_id = (
-            SELECT token_id
-            FROM tokens
-            WHERE token = %s
+        try:
+            rows = con.run(
+                """
+                SELECT *
+                FROM document_tokens
+                WHERE token_id = (
+                SELECT token_id
+                FROM tokens
+                WHERE token = :token
+                )
+                """,
+                token=token
             )
-            """,
-            (token,),
-        )
+        except Exception as e:
+            print(f"Error occurred while querying the database for token '{token}': {e}")
+            continue
 
         details = [row for row in rows]
 
@@ -77,14 +86,20 @@ def extract_ranked_documents(con, ranked_docs: list[dict]):
     """
     doc_details = []
     for doc in ranked_docs:
-        details = con.run(
-            """
+        try:
+            details = con.run(
+                """
                     SELECT *
                     FROM documents
-                    WHERE document_id = %s
+                    WHERE document_id = :id
                     """,
-            (doc["document_id"],),
-        )
+                id=doc["document_id"]
+            )[0]
+        except Exception as e:
+            print(f"Error occurred while querying the database for document '{doc['document_id']}': {e}")
+            continue
+
+        print(details)
         doc_detail = {
             "document_id": details[0],
             "title": details[1],
