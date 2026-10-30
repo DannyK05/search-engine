@@ -76,7 +76,7 @@ def rank(
             )
             """,
             (token,),
-        )
+        ) #(token_id, document_id, document_size, token_count)
 
         details = cur.fetchall()
 
@@ -115,7 +115,8 @@ def extract_ranked_documents(cur, ranked_docs: list[dict]):
             WHERE document_id = %s
             """,
             (doc["document_id"],),
-        )
+        )#(document_id, title, preview, url)
+        
         details = cur.fetchone()
         doc_detail = {
             "document_id": details[0],

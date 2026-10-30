@@ -99,7 +99,6 @@ def extract_ranked_documents(con, ranked_docs: list[dict]):
             print(f"Error occurred while querying the database for document '{doc['document_id']}': {e}")
             continue
 
-        print(details)
         doc_detail = {
             "document_id": details[0],
             "title": details[1],

@@ -15,9 +15,9 @@ def query_db(query, hyperdrive):
 
         if not tokens:
             return []  # guard against empty query
-        print(f"Tokens: {tokens}")
+      
         rank_details = rank(con, tokens)
-        print(f"Rank details: {rank_details}")
+   
         results = extract_ranked_documents(con, rank_details)
     finally:
         con.close()
