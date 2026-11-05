@@ -34,7 +34,7 @@ def rank(
                 """
         )[0][0]
     except Exception as e:
-        print(f"Error occurred while querying the database: {e}")
+        print(f"Error occurred while querying the database in ranking: {e}")
         return rank_details
 
     

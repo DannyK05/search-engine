@@ -1,8 +1,6 @@
-import os
 from collections import Counter, deque
 from urllib.parse import urlparse
 
-import psycopg
 import requests as r
 from bs4 import BeautifulSoup
 from crawler_types import Document
@@ -21,13 +19,7 @@ from utils.helpers import (
 load_dotenv()
 
 
-def search_engine():
-    # start db connection
-    conn = psycopg.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-    )
+def init_crawl(conn):
     cur = conn.cursor()
 
     # create db tables
@@ -49,7 +41,7 @@ def search_engine():
         "https://developer.mozilla.org/en-US/",
         "https://docs.python.org/3/",
     ]
-
+    # set urls that haven't been known
     seed_url: list[str] = [url for url in seed_url if url[0] not in known_urls]
 
     # fetch frontier from the db
@@ -88,8 +80,6 @@ def search_engine():
         remaining_pages -= 1
 
     conn.commit()
-    cur.close()
-    conn.close()
 
 
 def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
@@ -236,5 +226,5 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
 
 # ## Trying out the search engine pipeline
 
-# result = search_engine("cook beans")
+# result = init_crawl("cook beans")
 # print(result)

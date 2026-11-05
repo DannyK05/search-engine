@@ -1,11 +1,15 @@
+import pg8000.native
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from search import query_db
+from utils.database_helper import create_new_job, init_job_db
 from workers import WorkerEntrypoint, asgi
 
 app = FastAPI()
 
-origins =["http://localhost:5173", ]
+origins = [
+    "http://localhost:5173",
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,14 +19,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello from FastAPI on Cloudflare Workers!"}
 
+
 @app.get("/query")
 async def query(q: str, request: Request):
     hyperdrive = request.app.state.hyperdrive
-    results = query_db(q, hyperdrive)
+    # start db connection
+    con = pg8000.native.Connection(
+        user=hyperdrive.user,
+        password=hyperdrive.password,
+        database=hyperdrive.database,
+    )
+
+    init_job_db(con)
+    #TODO make creating a new job only when the results are insufficient
+    create_new_job(con)
+    results = query_db(q, con)
+    con.commit()
+    con.close()
     return {"results": results}
 
 
