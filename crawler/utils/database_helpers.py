@@ -1,4 +1,5 @@
-def create_db_tables(cur):
+def create_db_tables(conn):
+    cur = conn.cursor()
     cur.execute(
         """
             CREATE TABLE IF NOT EXISTS documents(
@@ -42,10 +43,11 @@ def create_db_tables(cur):
             );
         """
     )
-    cur.commit()
+    conn.commit()
 
 
-def add_failed_url(cur, url):
+def add_failed_url(conn, url):
+    cur = conn.cursor()
     cur.execute(
         """
             INSERT INTO failed_urls (url)
@@ -54,10 +56,11 @@ def add_failed_url(cur, url):
         """,
         (url,),
     )
-    cur.commit()
+    conn.commit()
 
 
-def add_crawled_url(cur,url):
+def add_crawled_url(conn, url):
+    cur = conn.cursor()
     cur.execute(
         """
             INSERT INTO crawled_urls (url)
@@ -66,9 +69,10 @@ def add_crawled_url(cur,url):
         """,
         (url,),
     )
-    cur.commit()
+    conn.commit()
 
-def add_known_url(cur,url):
+def add_known_url(conn, url):
+    cur = conn.cursor()
     cur.execute(
         """
             INSERT INTO known_urls (url)
@@ -77,4 +81,4 @@ def add_known_url(cur,url):
         """,
         (url,),
     )
-    cur.commit()
+    conn.commit()

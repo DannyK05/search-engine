@@ -1,11 +1,11 @@
 def init_job_db(con):
     con.run(
-    """
-        CREATE TABLE IF NOT EXISTS crawl_jobs(
+        """
+        CREATE TABLE IF NOT EXISTS crawl_jobs (
             id SERIAL PRIMARY KEY,
-            status TEXT,
+            status TEXT NOT NULL DEFAULT 'pending'
         )
-    """
+        """
     )
 
 

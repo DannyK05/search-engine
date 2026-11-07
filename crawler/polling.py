@@ -18,7 +18,7 @@ while True:
         """
         SELECT id
         FROM crawl_jobs
-        WHERE status = "pending"
+        WHERE status = 'pending'
         """
     )  # (id)
 
@@ -50,11 +50,11 @@ while True:
                     """,
                     (id,),
                 )
-                conn.commit()
 
                 try:
                     init_crawl(conn)
                 except Exception as e:
+                    conn.rollback()
                     print(f"Error occurred while running a job with id {id}: {e}")
                     cur.execute(
                         """
@@ -74,7 +74,6 @@ while True:
                     """,
                     (id,),
                 )
-                conn.commit()
             elif status == "completed":
                 cur.execute(
                     """
@@ -83,8 +82,9 @@ while True:
                     """,
                     (id,),
                 )
-                conn.commit()
 
     cur.close()
     conn.close()
+    print("Sleeping......")
     time.sleep(10)
+    print("Polling......")

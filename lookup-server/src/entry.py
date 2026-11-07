@@ -39,7 +39,6 @@ async def query(q: str, request: Request):
     #TODO make creating a new job only when the results are insufficient
     create_new_job(con)
     results = query_db(q, con)
-    con.commit()
     con.close()
     return {"results": results}
 

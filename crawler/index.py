@@ -23,7 +23,7 @@ def init_crawl(conn):
     cur = conn.cursor()
 
     # create db tables
-    create_db_tables(cur)
+    create_db_tables(conn)
 
     # fetch known urls from the db
     cur.execute(
@@ -64,7 +64,7 @@ def init_crawl(conn):
         # crawl the popped url from the frontier
         next_url = frontier.pop()
         print(f"Crawling: {next_url}")
-        crawl(cur, next_url, frontier, known_urls)
+        crawl(conn, next_url, frontier, known_urls)
 
         # delete the crawled url from the frontier db and add to known urls
         cur.execute(
@@ -74,7 +74,7 @@ def init_crawl(conn):
             """,
             (next_url,),
         )
-        add_known_url(cur, next_url)
+        add_known_url(conn, next_url)
         conn.commit()
 
         remaining_pages -= 1
@@ -82,8 +82,9 @@ def init_crawl(conn):
     conn.commit()
 
 
-def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
+def crawl(conn, url: str, frontier: deque[str], known_urls: set[str]):
 
+    cur = conn.cursor()
     hrefs: set[str] = (
         set()
     )  # initialize hrefs set to store the hrefs found in the crawled page
@@ -95,13 +96,13 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
         response = r.get(url, timeout=10)
     except r.RequestException:
         # added to failed url to be reindexed later
-        add_failed_url(cur, url)
+        add_failed_url(conn, url)
         return
 
     html_body = response.text
 
     if not response.ok:
-        add_failed_url(cur, url)
+        add_failed_url(conn, url)
         return
     # checks if response content is html
     if "html" not in response.headers.get("Content-Type", ""):
@@ -221,7 +222,7 @@ def crawl(cur, url: str, frontier: deque[str], known_urls: set[str]):
                 (parsed_url,),
             )
     # persist the succesfully crawled url
-    add_crawled_url(cur, url)
+    add_crawled_url(conn, url)
 
 
 # ## Trying out the search engine pipeline
