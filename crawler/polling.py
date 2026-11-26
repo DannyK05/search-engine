@@ -1,10 +1,11 @@
 import os
-import time
 
+# import time
 import psycopg
 from index import init_crawl
 
 while True:
+    print("Polling......")
     # start db connection
     conn = psycopg.connect(
         dbname=os.getenv("DB_NAME"),
@@ -85,6 +86,8 @@ while True:
 
     cur.close()
     conn.close()
-    print("Sleeping......")
-    time.sleep(10)
-    print("Polling......")
+    # print("Sleeping......")
+    # time.sleep(10)
+    break
+
+print("Polling stopped.")
