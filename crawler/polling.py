@@ -6,6 +6,12 @@ from index import init_crawl
 
 while True:
     print("Polling......")
+    print("DB_HOST configured:", bool(os.getenv("DB_HOST")))
+    print("DB_PORT configured:", bool(os.getenv("DB_PORT")))
+    print("DB_NAME configured:", bool(os.getenv("DB_NAME")))
+    print("DB_USER configured:", bool(os.getenv("DB_USER")))
+    print("DB_PASSWORD configured:", bool(os.getenv("DB_PASSWORD")))
+
     # start db connection
     conn = psycopg.connect(
         dbname=os.getenv("DB_NAME"),
@@ -14,6 +20,7 @@ while True:
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
     )
+
     cur = conn.cursor()
 
     # check for pending crawl jobs id
