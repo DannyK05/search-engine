@@ -33,10 +33,12 @@ async def query(q: str, request: Request):
         user=hyperdrive.user,
         password=hyperdrive.password,
         database=hyperdrive.database,
+        host=hyperdrive.host,
+        port=int(hyperdrive.port),
     )
 
     init_job_db(con)
-    #TODO make creating a new job only when the results are insufficient
+    # TODO make creating a new job only when the results are insufficient
     create_new_job(con)
     results = query_db(q, con)
     con.close()
